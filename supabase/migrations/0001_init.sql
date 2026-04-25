@@ -1,5 +1,17 @@
 -- gym-app initial schema
 -- Skapar tabeller, foreign keys och Row Level Security-policies.
+-- Idempotent: säker att köra om — droppar och återskapar allt.
+
+-- ============================================================================
+-- 0. Reset (gör migrationen säker att köra om)
+-- ============================================================================
+drop trigger if exists on_auth_user_created on auth.users;
+drop function if exists public.handle_new_user() cascade;
+drop table if exists public.workout_sets cascade;
+drop table if exists public.workouts cascade;
+drop table if exists public.exercises cascade;
+drop table if exists public.muscle_groups cascade;
+drop table if exists public.profiles cascade;
 
 -- ============================================================================
 -- 1. Profiles (1:1 med auth.users)
@@ -86,7 +98,6 @@ begin
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -101,22 +112,28 @@ alter table public.workouts enable row level security;
 alter table public.workout_sets enable row level security;
 
 -- Profiles: bara egen profil
+drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_select_own" on public.profiles
   for select using (auth.uid() = id);
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id);
 
 -- Muscle groups & exercises: läsbart för inloggade
+drop policy if exists "muscle_groups_read_authenticated" on public.muscle_groups;
+drop policy if exists "exercises_read_authenticated" on public.exercises;
 create policy "muscle_groups_read_authenticated" on public.muscle_groups
   for select using (auth.role() = 'authenticated');
 create policy "exercises_read_authenticated" on public.exercises
   for select using (auth.role() = 'authenticated');
 
 -- Workouts: bara egna pass (alla operationer)
+drop policy if exists "workouts_all_own" on public.workouts;
 create policy "workouts_all_own" on public.workouts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Workout sets: bara set som tillhör egna pass
+drop policy if exists "workout_sets_all_own" on public.workout_sets;
 create policy "workout_sets_all_own" on public.workout_sets
   for all using (
     exists (
