@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   ScrollView,
@@ -96,6 +95,14 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
   const router = useRouter();
   const { data: sets, isLoading } = useWorkoutSets(workoutId);
   const endWorkout = useEndWorkout();
+  const [confirming, setConfirming] = useState(false);
+
+  // Auto-reset the confirm state after 3s if user doesn't tap again.
+  useEffect(() => {
+    if (!confirming) return;
+    const t = setTimeout(() => setConfirming(false), 3000);
+    return () => clearTimeout(t);
+  }, [confirming]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { exercise: Exercise; sets: WorkoutSetWithExercise[] }>();
@@ -111,14 +118,11 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
   const startedStr = startedDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
   const handleEnd = () => {
-    Alert.alert('Avsluta passet?', 'Tomma sets utan vikt/reps tas bort.', [
-      { text: 'Avbryt', style: 'cancel' },
-      {
-        text: 'Avsluta',
-        style: 'destructive',
-        onPress: () => endWorkout.mutate(workoutId),
-      },
-    ]);
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    endWorkout.mutate(workoutId);
   };
 
   return (
@@ -129,11 +133,17 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
           <Text style={styles.subtitle}>Startat {startedStr}</Text>
         </View>
         <Pressable
-          style={[styles.endButton, endWorkout.isPending && styles.disabled]}
+          style={[
+            styles.endButton,
+            confirming && styles.endButtonConfirm,
+            endWorkout.isPending && styles.disabled,
+          ]}
           onPress={handleEnd}
           disabled={endWorkout.isPending}
         >
-          <Text style={styles.endButtonText}>Avsluta</Text>
+          <Text style={[styles.endButtonText, confirming && styles.endButtonTextConfirm]}>
+            {endWorkout.isPending ? 'Avslutar...' : confirming ? 'Tryck igen' : 'Avsluta'}
+          </Text>
         </Pressable>
       </View>
 
@@ -184,8 +194,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginRight: 4,
+    minWidth: 100,
+    alignItems: 'center',
   },
+  endButtonConfirm: { backgroundColor: '#ef4444' },
   endButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
+  endButtonTextConfirm: { color: '#fff' },
   disabled: { opacity: 0.5 },
   sectionTitle: { color: '#888', fontSize: 14, marginTop: 16, marginBottom: 8, paddingLeft: 4 },
   emptyText: { color: '#666', fontSize: 14, paddingLeft: 4 },
