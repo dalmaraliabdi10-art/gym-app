@@ -1,10 +1,18 @@
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BodyFigure } from '@/components/BodyFigure/BodyFigure';
+import type { MuscleSlug } from '@/components/BodyFigure/muscles';
 import { useAuth } from '@/lib/auth';
 
 export default function BodyScreen() {
-  const { session, signOut } = useAuth();
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handlePressMuscle = (slug: MuscleSlug) => {
+    router.push(`/muscle/${slug}`);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -14,12 +22,9 @@ export default function BodyScreen() {
           <Text style={styles.signOut}>Sign out</Text>
         </Pressable>
       </View>
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderTitle}>Kroppsfigur kommer här</Text>
-        <Text style={styles.placeholderText}>
-          Inloggad som {session?.user.email}.{'\n'}
-          Body figure med klickbara muskler byggs i milstolpe 2.
-        </Text>
+      <Text style={styles.hint}>Klicka på en muskel för att se övningar</Text>
+      <View style={styles.figure}>
+        <BodyFigure onPressMuscle={handlePressMuscle} />
       </View>
     </SafeAreaView>
   );
@@ -36,7 +41,6 @@ const styles = StyleSheet.create({
   },
   title: { color: '#fff', fontSize: 28, fontWeight: '700' },
   signOut: { color: '#60a5fa', fontSize: 14 },
-  placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  placeholderTitle: { color: '#fff', fontSize: 20, marginBottom: 12 },
-  placeholderText: { color: '#888', fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  hint: { color: '#888', fontSize: 13, textAlign: 'center', paddingBottom: 8 },
+  figure: { flex: 1, paddingHorizontal: 16, paddingBottom: 16 },
 });
