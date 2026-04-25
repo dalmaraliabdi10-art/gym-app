@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,7 +13,6 @@ export default function MuscleDetailScreen() {
   if (!muscle) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Okänd muskel' }} />
         <View style={styles.notFound}>
           <Text style={styles.notFoundText}>Muskeln {String(slug)} hittades inte.</Text>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -26,13 +25,6 @@ export default function MuscleDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          title: muscle.name_sv,
-          headerStyle: { backgroundColor: '#0a0a0a' },
-          headerTintColor: '#fff',
-        }}
-      />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{muscle.name_sv}</Text>
         <Text style={styles.subtitle}>{muscle.name_en}</Text>

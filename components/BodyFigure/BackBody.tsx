@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { Circle, Ellipse, G, Path, Rect, Svg } from 'react-native-svg';
+
+import { MuscleGroup } from './MuscleGroup';
 import type { MuscleSlug } from './muscles';
 
 const BODY_FILL = '#2a2a2a';
 const BODY_STROKE = '#444';
 const MUSCLE_FILL = '#3b82f6';
-const MUSCLE_OPACITY = 0.55;
 
 type Props = {
   onPressMuscle: (slug: MuscleSlug) => void;
@@ -13,9 +15,11 @@ type Props = {
 };
 
 export function BackBody({ onPressMuscle, width = '100%', height = '100%' }: Props) {
+  const [hovered, setHovered] = useState<MuscleSlug | null>(null);
+
   return (
     <Svg viewBox="0 0 200 500" width={width} height={height}>
-      {/* Body silhouette (same shape as front) */}
+      {/* Body silhouette */}
       <G fill={BODY_FILL} stroke={BODY_STROKE} strokeWidth={1.2}>
         <Circle cx="100" cy="42" r="24" />
         <Path d="M 92,64 L 108,64 L 110,78 L 90,78 Z" />
@@ -27,33 +31,33 @@ export function BackBody({ onPressMuscle, width = '100%', height = '100%' }: Pro
       </G>
 
       {/* Muscles (clickable) — back view */}
-      <G fill={MUSCLE_FILL} fillOpacity={MUSCLE_OPACITY} stroke={MUSCLE_FILL} strokeOpacity={0.9} strokeWidth={1}>
-        <G onPress={() => onPressMuscle('traps')}>
+      <G fill={MUSCLE_FILL} stroke={MUSCLE_FILL} strokeWidth={1}>
+        <MuscleGroup slug="traps" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Path d="M 80,80 L 120,80 L 115,115 L 100,108 L 85,115 Z" />
-        </G>
-        <G onPress={() => onPressMuscle('lats')}>
+        </MuscleGroup>
+        <MuscleGroup slug="lats" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Path d="M 65,115 L 95,115 L 92,200 L 70,180 Z" />
           <Path d="M 135,115 L 105,115 L 108,200 L 130,180 Z" />
-        </G>
-        <G onPress={() => onPressMuscle('triceps')}>
+        </MuscleGroup>
+        <MuscleGroup slug="triceps" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Ellipse cx="50" cy="135" rx="9" ry="24" />
           <Ellipse cx="150" cy="135" rx="9" ry="24" />
-        </G>
-        <G onPress={() => onPressMuscle('lower_back')}>
+        </MuscleGroup>
+        <MuscleGroup slug="lower_back" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Rect x="86" y="200" width="28" height="40" rx="6" />
-        </G>
-        <G onPress={() => onPressMuscle('glutes')}>
+        </MuscleGroup>
+        <MuscleGroup slug="glutes" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Ellipse cx="86" cy="265" rx="16" ry="14" />
           <Ellipse cx="114" cy="265" rx="16" ry="14" />
-        </G>
-        <G onPress={() => onPressMuscle('hamstrings')}>
+        </MuscleGroup>
+        <MuscleGroup slug="hamstrings" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Ellipse cx="84" cy="330" rx="13" ry="35" />
           <Ellipse cx="116" cy="330" rx="13" ry="35" />
-        </G>
-        <G onPress={() => onPressMuscle('calves')}>
+        </MuscleGroup>
+        <MuscleGroup slug="calves" hovered={hovered} setHovered={setHovered} onPress={onPressMuscle}>
           <Ellipse cx="84" cy="420" rx="11" ry="32" />
           <Ellipse cx="116" cy="420" rx="11" ry="32" />
-        </G>
+        </MuscleGroup>
       </G>
     </Svg>
   );
