@@ -1,8 +1,8 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -12,7 +12,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
 });
 
-function AuthGate() {
+function AuthGate({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -27,7 +27,8 @@ function AuthGate() {
     }
   }, [session, segments, loading, router]);
 
-  return <Slot />;
+  if (loading) return null;
+  return <>{children}</>;
 }
 
 export default function RootLayout() {
@@ -37,8 +38,28 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AuthGate />
-          <StatusBar style="auto" />
+          <AuthGate>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#0a0a0a' },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen
+                name="muscle/[slug]"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: '',
+                  headerBackTitle: 'Body',
+                }}
+              />
+            </Stack>
+          </AuthGate>
+          <StatusBar style="light" />
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
