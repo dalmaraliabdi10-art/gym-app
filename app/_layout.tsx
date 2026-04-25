@@ -57,6 +57,16 @@ export default function RootLayout() {
                   headerBackTitle: 'Body',
                 }}
               />
+              <Stack.Screen
+                name="exercise/[id]"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: '',
+                  headerBackTitle: 'Tillbaka',
+                }}
+              />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />
