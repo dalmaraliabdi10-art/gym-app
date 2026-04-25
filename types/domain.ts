@@ -39,3 +39,7 @@ export type WorkoutSet = {
   rpe: number | null;
   completed_at: string;
 };
+
+export type WorkoutSetWithExercise = WorkoutSet & {
+  exercise: Exercise;
+};

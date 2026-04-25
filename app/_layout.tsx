@@ -67,6 +67,14 @@ export default function RootLayout() {
                   headerBackTitle: 'Tillbaka',
                 }}
               />
+              <Stack.Screen
+                name="workout/add-exercise"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                  contentStyle: { backgroundColor: '#0a0a0a' },
+                }}
+              />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />
