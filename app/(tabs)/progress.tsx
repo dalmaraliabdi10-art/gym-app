@@ -36,7 +36,7 @@ export default function ProgressScreen() {
 
       <View style={styles.statsRow}>
         <StatCard label="Pass denna vecka" value={String(stats.thisWeekWorkouts)} />
-        <StatCard label="Total volym" value={`${formatVolume(stats.totalVolume)}`} suffix="kg" />
+        <StatCard label="Max-vikt" value={String(stats.maxWeight)} suffix="kg" />
         <StatCard label="Övningar" value={String(stats.distinctExercises)} />
       </View>
 
@@ -94,7 +94,7 @@ function startOfWeek(d: Date) {
 }
 
 function computeStats(sets: LoggedSet[], totalCompletedWorkouts: number) {
-  const totalVolume = sets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
+  const maxWeight = sets.reduce((max, s) => Math.max(max, s.weight_kg), 0);
   const distinctExercises = new Set(sets.map((s) => s.exercise_id)).size;
 
   const weekStart = startOfWeek(new Date());
@@ -103,7 +103,7 @@ function computeStats(sets: LoggedSet[], totalCompletedWorkouts: number) {
   );
 
   return {
-    totalVolume,
+    maxWeight,
     distinctExercises,
     totalWorkouts: totalCompletedWorkouts,
     thisWeekWorkouts: thisWeekWorkoutIds.size,
@@ -133,11 +133,6 @@ function computeExerciseList(sets: LoggedSet[]): ExerciseSummary[] {
     }
   }
   return Array.from(map.values()).sort((a, b) => +new Date(b.lastDate) - +new Date(a.lastDate));
-}
-
-function formatVolume(kg: number) {
-  if (kg >= 1000) return `${(kg / 1000).toFixed(1)}t`;
-  return Math.round(kg).toString();
 }
 
 const styles = StyleSheet.create({
