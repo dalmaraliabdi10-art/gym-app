@@ -87,6 +87,34 @@ export default function RootLayout() {
                   headerBackTitle: 'Progress',
                 }}
               />
+              <Stack.Screen
+                name="admin/exercises"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: '',
+                  headerBackTitle: 'Body',
+                }}
+              />
+              <Stack.Screen
+                name="admin/exercise/new"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: 'Ny övning',
+                }}
+              />
+              <Stack.Screen
+                name="admin/exercise/[id]"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: 'Redigera övning',
+                }}
+              />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />
