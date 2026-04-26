@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ExerciseLog } from '@/components/ExerciseLog';
+import { RestTimer } from '@/components/RestTimer';
 import {
   useActiveWorkout,
   useEndWorkout,
@@ -146,6 +147,8 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
           </Text>
         </Pressable>
       </View>
+
+      <RestTimer />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
         {isLoading ? (

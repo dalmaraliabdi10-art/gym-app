@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { TimerProvider } from '@/lib/timer';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -37,6 +38,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <TimerProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AuthGate>
             <Stack
@@ -79,6 +81,7 @@ export default function RootLayout() {
           </AuthGate>
           <StatusBar style="light" />
         </ThemeProvider>
+        </TimerProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
