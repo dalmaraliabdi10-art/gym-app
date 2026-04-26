@@ -1,17 +1,18 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, type ReactNode } from 'react';
 import 'react-native-reanimated';
 
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { setupOnlineManager } from '@/lib/network';
+import { queryClient, queryPersister } from '@/lib/queryClient';
 import { TimerProvider } from '@/lib/timer';
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
-});
+setupOnlineManager();
 
 function AuthGate({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -36,10 +37,20 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        dehydrateOptions: {
+          shouldDehydrateMutation: (m) => m.state.status !== 'success',
+        },
+      }}
+    >
       <AuthProvider>
         <TimerProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <OfflineBanner />
           <AuthGate>
             <Stack
               screenOptions={{
@@ -121,6 +132,6 @@ export default function RootLayout() {
         </ThemeProvider>
         </TimerProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
