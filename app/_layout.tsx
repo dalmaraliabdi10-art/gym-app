@@ -77,6 +77,16 @@ export default function RootLayout() {
                   contentStyle: { backgroundColor: '#0a0a0a' },
                 }}
               />
+              <Stack.Screen
+                name="progress/[exerciseId]"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: '#0a0a0a' },
+                  headerTintColor: '#fff',
+                  headerTitle: '',
+                  headerBackTitle: 'Progress',
+                }}
+              />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />
