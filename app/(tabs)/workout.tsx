@@ -15,6 +15,7 @@ import { ExerciseLog } from '@/components/ExerciseLog';
 import { RestTimer } from '@/components/RestTimer';
 import {
   useActiveWorkout,
+  useCancelWorkout,
   useEndWorkout,
   usePastWorkouts,
   useStartWorkout,
@@ -64,7 +65,14 @@ function NoActiveView() {
         <FlatList
           data={past}
           keyExtractor={(w) => w.id}
-          renderItem={({ item }) => <PastWorkoutRow id={item.id} startedAt={item.started_at} endedAt={item.ended_at!} />}
+          renderItem={({ item }) => (
+            <PastWorkoutRow
+              startedAt={item.started_at}
+              endedAt={item.ended_at!}
+              exerciseCount={item.exerciseCount}
+              setCount={item.realSetCount}
+            />
+          )}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
@@ -72,20 +80,28 @@ function NoActiveView() {
   );
 }
 
-function PastWorkoutRow({ id, startedAt, endedAt }: { id: string; startedAt: string; endedAt: string }) {
-  const { data: sets } = useWorkoutSets(id);
+function PastWorkoutRow({
+  startedAt,
+  endedAt,
+  exerciseCount,
+  setCount,
+}: {
+  startedAt: string;
+  endedAt: string;
+  exerciseCount: number;
+  setCount: number;
+}) {
   const date = new Date(startedAt);
   const dur = Math.round((new Date(endedAt).getTime() - date.getTime()) / 60000);
   const dateStr = date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
   const timeStr = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-  const exerciseCount = sets ? new Set(sets.map((s) => s.exercise_id)).size : 0;
 
   return (
     <View style={styles.pastRow}>
       <View>
         <Text style={styles.pastDate}>{dateStr} · {timeStr}</Text>
         <Text style={styles.pastMeta}>
-          {exerciseCount} övningar · {sets?.length ?? 0} set · {dur} min
+          {exerciseCount} övningar · {setCount} set · {dur} min
         </Text>
       </View>
     </View>
@@ -96,14 +112,21 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
   const router = useRouter();
   const { data: sets, isLoading } = useWorkoutSets(workoutId);
   const endWorkout = useEndWorkout();
-  const [confirming, setConfirming] = useState(false);
+  const cancelWorkout = useCancelWorkout();
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
-  // Auto-reset the confirm state after 3s if user doesn't tap again.
   useEffect(() => {
-    if (!confirming) return;
-    const t = setTimeout(() => setConfirming(false), 3000);
+    if (!confirmingEnd) return;
+    const t = setTimeout(() => setConfirmingEnd(false), 3000);
     return () => clearTimeout(t);
-  }, [confirming]);
+  }, [confirmingEnd]);
+
+  useEffect(() => {
+    if (!confirmingCancel) return;
+    const t = setTimeout(() => setConfirmingCancel(false), 3000);
+    return () => clearTimeout(t);
+  }, [confirmingCancel]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { exercise: Exercise; sets: WorkoutSetWithExercise[] }>();
@@ -119,31 +142,56 @@ function ActiveWorkoutView({ workoutId, startedAt }: { workoutId: string; starte
   const startedStr = startedDate.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
   const handleEnd = () => {
-    if (!confirming) {
-      setConfirming(true);
+    if (!confirmingEnd) {
+      setConfirmingEnd(true);
+      setConfirmingCancel(false);
       return;
     }
     endWorkout.mutate(workoutId);
   };
 
+  const handleCancel = () => {
+    if (!confirmingCancel) {
+      setConfirmingCancel(true);
+      setConfirmingEnd(false);
+      return;
+    }
+    cancelWorkout.mutate(workoutId);
+  };
+
+  const busy = endWorkout.isPending || cancelWorkout.isPending;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.activeHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.title}>Aktivt pass</Text>
           <Text style={styles.subtitle}>Startat {startedStr}</Text>
         </View>
         <Pressable
           style={[
+            styles.cancelButton,
+            confirmingCancel && styles.cancelButtonConfirm,
+            busy && styles.disabled,
+          ]}
+          onPress={handleCancel}
+          disabled={busy}
+        >
+          <Text style={[styles.cancelButtonText, confirmingCancel && styles.cancelButtonTextConfirm]}>
+            {cancelWorkout.isPending ? '...' : confirmingCancel ? 'Tryck igen' : 'Avbryt'}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
             styles.endButton,
-            confirming && styles.endButtonConfirm,
-            endWorkout.isPending && styles.disabled,
+            confirmingEnd && styles.endButtonConfirm,
+            busy && styles.disabled,
           ]}
           onPress={handleEnd}
-          disabled={endWorkout.isPending}
+          disabled={busy}
         >
-          <Text style={[styles.endButtonText, confirming && styles.endButtonTextConfirm]}>
-            {endWorkout.isPending ? 'Avslutar...' : confirming ? 'Tryck igen' : 'Avsluta'}
+          <Text style={[styles.endButtonText, confirmingEnd && styles.endButtonTextConfirm]}>
+            {endWorkout.isPending ? 'Avslutar...' : confirmingEnd ? 'Tryck igen' : 'Avsluta'}
           </Text>
         </Pressable>
       </View>
@@ -191,18 +239,32 @@ const styles = StyleSheet.create({
   startButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   endButton: {
     backgroundColor: '#1a1a1a',
-    borderColor: '#ef4444',
+    borderColor: '#22c55e',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginRight: 4,
-    minWidth: 100,
+    minWidth: 90,
     alignItems: 'center',
   },
-  endButtonConfirm: { backgroundColor: '#ef4444' },
-  endButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
-  endButtonTextConfirm: { color: '#fff' },
+  endButtonConfirm: { backgroundColor: '#22c55e' },
+  endButtonText: { color: '#22c55e', fontSize: 14, fontWeight: '600' },
+  endButtonTextConfirm: { color: '#0a0a0a' },
+  cancelButton: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#ef4444',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    minWidth: 90,
+    alignItems: 'center',
+  },
+  cancelButtonConfirm: { backgroundColor: '#ef4444' },
+  cancelButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
+  cancelButtonTextConfirm: { color: '#fff' },
   disabled: { opacity: 0.5 },
   sectionTitle: { color: '#888', fontSize: 14, marginTop: 16, marginBottom: 8, paddingLeft: 4 },
   emptyText: { color: '#666', fontSize: 14, paddingLeft: 4 },

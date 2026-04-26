@@ -23,18 +23,35 @@ export function useActiveWorkout() {
   });
 }
 
+export type PastWorkoutSummary = Workout & {
+  realSetCount: number;
+  exerciseCount: number;
+};
+
 export function usePastWorkouts() {
   return useQuery({
     queryKey: PAST_KEY,
-    queryFn: async (): Promise<Workout[]> => {
+    queryFn: async (): Promise<PastWorkoutSummary[]> => {
       const { data, error } = await supabase
         .from('workouts')
-        .select('*')
+        .select('*, sets:workout_sets(weight_kg, reps, exercise_id)')
         .not('ended_at', 'is', null)
         .order('started_at', { ascending: false })
         .limit(30);
       if (error) throw error;
-      return (data ?? []) as Workout[];
+      const rows = (data ?? []) as Array<
+        Workout & { sets: { weight_kg: number | null; reps: number | null; exercise_id: string }[] }
+      >;
+      return rows
+        .map((w) => {
+          const realSets = w.sets.filter((s) => s.weight_kg !== null && s.reps !== null);
+          return {
+            ...w,
+            realSetCount: realSets.length,
+            exerciseCount: new Set(realSets.map((s) => s.exercise_id)).size,
+          };
+        })
+        .filter((w) => w.realSetCount > 0);
     },
   });
 }
@@ -88,10 +105,40 @@ export function useEndWorkout() {
         .is('reps', null)
         .is('weight_kg', null);
 
+      // If no real sets remain, delete the workout entirely instead of
+      // saving it to history — that way starting a workout and changing
+      // your mind doesn't pollute the log.
+      const { count, error: countErr } = await supabase
+        .from('workout_sets')
+        .select('*', { count: 'exact', head: true })
+        .eq('workout_id', workoutId);
+      if (countErr) throw countErr;
+
+      if (!count || count === 0) {
+        const { error: delErr } = await supabase.from('workouts').delete().eq('id', workoutId);
+        if (delErr) throw delErr;
+        return { discarded: true as const };
+      }
+
       const { error } = await supabase
         .from('workouts')
         .update({ ended_at: new Date().toISOString() })
         .eq('id', workoutId);
+      if (error) throw error;
+      return { discarded: false as const };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ACTIVE_KEY });
+      qc.invalidateQueries({ queryKey: PAST_KEY });
+    },
+  });
+}
+
+export function useCancelWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (workoutId: string) => {
+      const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
       if (error) throw error;
     },
     onSuccess: () => {
